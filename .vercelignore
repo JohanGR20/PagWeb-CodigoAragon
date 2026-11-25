@@ -1,0 +1,17 @@
+.git/
+.vercel/
+.env.local
+.env*.local
+backend/.venv/
+backend/.pgdata/
+backend/.pytest_cache/
+backend/.env
+backend/__pycache__/
+backend/**/__pycache__/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env*.local
+*.log
+Codigo_Aragon_Presentacion.pdf
