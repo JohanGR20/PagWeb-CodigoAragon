@@ -1,0 +1,5 @@
+# Dependencias opcionales para tareas en segundo plano y caché.
+# El sistema funciona sin ellas; activa ENABLE_BACKGROUND_TASKS=true para usarlas.
+-r requirements.txt
+celery[redis]>=5.4
+redis>=5.2

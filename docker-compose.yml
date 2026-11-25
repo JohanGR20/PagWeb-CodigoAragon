@@ -1,0 +1,74 @@
+name: codigo-aragon
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: codigo-aragon-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-codigo_aragon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codigo_aragon}
+      POSTGRES_DB: ${POSTGRES_DB:-codigo_aragon}
+    ports:
+      - "5544:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-codigo_aragon} -d ${POSTGRES_DB:-codigo_aragon}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: codigo-aragon-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_NAME: Código Aragón API
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-codigo_aragon}:${POSTGRES_PASSWORD:-codigo_aragon}@db:5432/${POSTGRES_DB:-codigo_aragon}
+      AUTO_CREATE_TABLES: "false"
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      COMPANY_EMAIL: codigoaragon845@gmail.com
+      COMPANY_PHONE: "5615431206"
+      WHATSAPP_NUMBER: "5215615431206"
+      ENABLE_BACKGROUND_TASKS: "false"
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    container_name: codigo-aragon-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+volumes:
+  pgdata:
